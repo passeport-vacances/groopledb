@@ -33,7 +33,7 @@ setup(
     author='Jacques Supcik',
     author_email='jacques@pvfr.ch',
     url='https://github.com/passeport-vacances/groopledb',
-    packages=['groopledb'],
+    packages=['pvfr.groopledb'],
     include_package_data=True,
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
