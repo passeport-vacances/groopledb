@@ -21,15 +21,30 @@ Author: Jacques Supcik
 -----------------------------------------------------------------------------
 '''
 
+import datetime
+import logging
+import pathlib
 import re
+
+import records
+import yaml
 
 from .activity import Activity
 from .category import Category
 from .group import Group
+from .organizer import Organizer
+from .participant import Participant
 
-import datetime
+try:
+    # pylint: disable=unused-import,ungrouped-imports
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    # pylint: disable=unused-import,ungrouped-imports
+    from yaml import Loader, Dumper
 
 # pylint: disable=invalid-name
+
+logger = logging.getLogger(__name__)
 
 
 def get_attribute_map(db, table, config):
@@ -39,18 +54,26 @@ def get_attribute_map(db, table, config):
     for r in rows:
         t = [k for (k, v) in config.items() if re.match(v, r.attribute_label)]
         if len(t) > 1:
-            raise Exception("Internal error")
+            raise Exception(
+                f"Internal error : {len(t)} keys found for {r.attribute_label} ({t})")
         if len(t) == 1:
             attr_id[r.attribute_id] = t[0]
     return attr_id
 
 
-def get_all_activities(db, config):
+def get_data(db_url, config_file=pathlib.Path(pathlib.Path(__file__).parent, "config.yml")):
     """ Returns all activities """
     # pylint: disable=too-many-branches
     categories = dict()
     activities = dict()
     groups = dict()
+    participants = dict()
+    organizers = dict()
+
+    db = records.Database(db_url)
+    config = yaml.load(open(config_file, 'r'), Loader=Loader)
+
+    # FETCH CATEGORIES AND ACTIVITIES
 
     rows = db.query('select * from categories')
     for r in rows:
@@ -69,8 +92,7 @@ def get_all_activities(db, config):
 
     aam = get_attribute_map(db, '_activity_attributes',
                             config['activity_attributes'])
-    muam = get_attribute_map(db, '_user_attributes',
-                             config['multiple_user_attributes'])
+    uam = get_attribute_map(db, '_user_attributes', config['user_attributes'])
     gam = get_attribute_map(db, '_group_attributes',
                             config['group_attributes'])
 
@@ -86,7 +108,7 @@ def get_all_activities(db, config):
     for r in rows:
         if r.activity_id in activities:
             a = activities[r.activity_id]
-            key = muam.get(r.user_attribute_id, None)
+            key = uam.get(r.user_attribute_id, None)
             if key is not None:
                 a.attributes[key] = a.attributes.get(
                     key, list()) + [r.attribute_value]
@@ -120,7 +142,72 @@ def get_all_activities(db, config):
     for c in categories.values():
         c.sort_activities()
 
-    return sorted(categories.values(), key=lambda x: x.order)
+   # Extract Organizers
+
+    for a in activities.values():
+        o = Organizer(
+            id=-1,
+            name=a.attributes['organizer_name'],
+            address=a.attributes.get('organizer_address', None),
+            phone=a.attributes.get('organizer_phone', None),
+            email=a.attributes.get('organizer_email', None),
+            presence_list_to=a.attributes.get(
+                'participants_list_to_name', None),
+            presence_list_to_email=a.attributes.get(
+                'participants_list_to_email', None),
+        )
+        o.fix_id()
+        o.extract_emails()
+        if o.id in organizers:
+            o = organizers[o.id]
+        else:
+            organizers[o.id] = o
+        o.activities.add(a.id)
+        a.organizer_id = o.id
+
+    # FETCH PARTICIPANTS
+
+    rows = db.query('select * from users')
+    for r in rows:
+        p = Participant(
+            r.user_id,
+            username=r.username,
+            firstname=r.firstname,
+            lastname=r.lastname,
+            email=r.email,
+        )
+        participants[p.id] = p
+
+    rows = db.query('select * from users_attributes')
+    for r in rows:
+        if r.user_id not in participants:
+            logger.warning(f"User {r.user_id} not found")
+            continue
+        p = participants[r.user_id]
+        key = uam.get(r.attribute_id, None)
+        if key is not None:
+            p.attributes[key] = r.value
+
+    rows = db.query('select * from attributions')
+    for r in rows:
+        if r.user_id not in participants:
+            logger.warning(f"User {r.user_id} not found")
+            continue
+        if r.group_id not in groups:
+            logger.warning(f"Group {r.group_id} not found")
+            continue
+        p = participants[r.user_id]
+        g = groups[r.group_id]
+        p.groups.add(g.id)
+        g.participants.add(p.id)
+
+    return {
+        'activities_list': sorted(categories.values(), key=lambda x: x.order),
+        'activities': activities,
+        'categories': categories,
+        'participants': participants,
+        'organizers': organizers,
+    }
 
 
 def activities_to_agenda(categories, year):

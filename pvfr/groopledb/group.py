@@ -42,6 +42,7 @@ class Group:
               'jeudi', 'vendredi', 'samedi', 'dimanche']
     dow_de = ['Montag', 'Dienstag', 'Mittwoch',
               'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+    participants: set = field(default_factory=set)
 
     @staticmethod
     def parse_day(d, schedule):

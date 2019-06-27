@@ -21,7 +21,7 @@ Author: Jacques Supcik
 -----------------------------------------------------------------------------
 '''
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -33,6 +33,7 @@ class Activity:
     category: int
     attributes: dict
     groups: list
+    organizer_id: int = None
 
     def sort_groups(self):
         """ Sort groups based on order attribute """

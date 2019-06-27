@@ -39,6 +39,7 @@ setup(
     setup_requires=['setuptools_scm'],
     install_requires=[
         'PyMySQL',
+        'PyYAML',
         'records',
     ],
     classifiers=[
