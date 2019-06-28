@@ -21,6 +21,7 @@ Author: Jacques Supcik
 -----------------------------------------------------------------------------
 '''
 
+import datetime
 import re
 from dataclasses import dataclass, field
 
@@ -45,7 +46,7 @@ class Group:
     participants: set = field(default_factory=set)
 
     @staticmethod
-    def parse_day(d, schedule):
+    def parse_day(d, schedule, year):
         """ Parses a day """
         res = {
             "order": 13 * 32,
@@ -53,6 +54,7 @@ class Group:
             "day": None,
             "month": None,
             "schedule": schedule,
+            "datetime": None,
         }
         c = d.find(',')
         if c > 0:
@@ -75,6 +77,9 @@ class Group:
             else:
                 res["date_fr"] = f"{dow} {day}.{month}"
                 res["date_de"] = res["date_fr"]
+
+            res["datetime"] = datetime.datetime(year, int(month), int(day))
+
         else:
             res["date_fr"] = re.sub(r'\s+', ' ', d.strip())
             res["date_de"] = res["date_fr"]
@@ -84,6 +89,9 @@ class Group:
             if m:
                 res["order"] += (int(m.group(1)) * 60 +
                                  int(m.group(2))) / (24 * 60)
+                if res["datetime"] is not None:
+                    res["datetime"] = res["datetime"].replace(
+                        hour=int(m.group(1)), minute=int(m.group(2)))
 
         return res
 
@@ -98,7 +106,7 @@ class Group:
                 seen.add(i)
         return res
 
-    def sanitize(self):
+    def sanitize(self, year):
         """ Sanitize """
         l = self.label.strip()
         if 'schedule' in self.attributes:  # pylint: disable=unsupported-membership-test
@@ -111,7 +119,7 @@ class Group:
         else:
             s = None
 
-        days = [Group.parse_day(i, s) for i in l.split('|')]
+        days = [Group.parse_day(i, s, year) for i in l.split('|')]
         date_fr = " + ".join(Group.unique([i["date_fr"] for i in days]))
         date_de = " + ".join(Group.unique([i["date_de"] for i in days]))
         self.order = min([i["order"] for i in days])

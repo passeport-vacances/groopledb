@@ -61,7 +61,7 @@ def get_attribute_map(db, table, config):
     return attr_id
 
 
-def get_data(db_url, config_file=pathlib.Path(pathlib.Path(__file__).parent, "config.yml")):
+def get_data(db_url, year=datetime.datetime.now().year, config_file=pathlib.Path(pathlib.Path(__file__).parent, "config.yml")):
     """ Returns all activities """
     # pylint: disable=too-many-branches
     categories = dict()
@@ -131,7 +131,7 @@ def get_data(db_url, config_file=pathlib.Path(pathlib.Path(__file__).parent, "co
 
     # Fix/complete groups
     for g in groups.values():
-        g.sanitize()
+        g.sanitize(year)
 
     # Fix/complete activities and sort groups
     for a in activities.values():
