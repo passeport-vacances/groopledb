@@ -51,6 +51,8 @@ class Organizer:
         del v['activities']
         del v['email_list']
         del v['email_presence_list']
+        del v['presence_list_to']
+        del v['presence_list_to_email']
 
         m.update(pickle.dumps(v))
         self.id = m.hexdigest()
