@@ -45,7 +45,7 @@ class Organizer:
     email_presence_list: list = field(default_factory=list)
 
     def fix_id(self):
-        m = hashlib.blake2b()
+        m = hashlib.blake2b(digest_size=32)
         v = asdict(self)
         del v['id']
         del v['activities']
