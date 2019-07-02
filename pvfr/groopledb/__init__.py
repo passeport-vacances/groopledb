@@ -157,7 +157,9 @@ def get_data(db_url, year=datetime.datetime.now().year, config_file=pathlib.Path
                 'participants_list_to_email', None),
         )
         o.fix_id()
-        o.extract_emails()
+        o.email_list = a.orga_email_list
+        o.email_presence_list = a.orga_email_list_participants
+
         if o.id in organizers:
             o = organizers[o.id]
         else:

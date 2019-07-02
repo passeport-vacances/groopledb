@@ -57,26 +57,5 @@ class Organizer:
         m.update(pickle.dumps(v))
         self.id = m.hexdigest()
 
-    def extract_emails(self):
-
-        def splitlist(x):
-            email_re = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
-            if x is None:
-                return []
-
-            l = re.split(r'[\s;,]+', str(x))
-            l = [i for i in l if len(i) > 0]
-            res = set()
-            for i in l:
-                if re.match(email_re, i):
-                    res.add(i)
-                else:
-                    logger.warning("Invalid email : %s", i)
-
-            return sorted(list(res))
-
-        self.email_list = splitlist(self.email)
-        self.email_presence_list = splitlist(self.presence_list_to_email)
-
     def __str__(self):
         return f'{self.name}'

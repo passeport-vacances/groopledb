@@ -20,8 +20,10 @@ Created Date: 2019-06-24
 Author: Jacques Supcik
 -----------------------------------------------------------------------------
 '''
-
+import logging
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -21,7 +21,11 @@ Author: Jacques Supcik
 -----------------------------------------------------------------------------
 '''
 
+import logging
+import re
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -34,6 +38,8 @@ class Activity:
     attributes: dict
     groups: list
     organizer_id: int = None
+    orga_email_list: list = field(default_factory=list)
+    orga_email_list_participants: list = field(default_factory=list)
 
     def sort_groups(self):
         """ Sort groups based on order attribute """
@@ -56,6 +62,28 @@ class Activity:
         result.append(age_range)
         return " + ".join([f"{i[0]}-{i[1]}" for i in result])
 
+    def extract_emails(self):
+
+        def splitlist(x):
+            email_re = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+            if x is None:
+                return []
+
+            l = re.split(r'[\s;,]+', str(x))
+            l = [i for i in l if len(i) > 0]
+            res = set()
+            for i in l:
+                if re.match(email_re, i):
+                    res.add(i.lower())
+                else:
+                    logger.warning("Invalid email : %s", i)
+
+            return sorted(list(res))
+
+        self.orga_email_list = splitlist(self.attributes.get("organizer_email", ""))
+        self.orga_email_list_participants = splitlist(
+            self.attributes.get("participants_list_to_email", ""))
+
     def sanitize(self):
         """ Sanitize data """
         for i in ['gender', 'all_pass']:
@@ -65,6 +93,7 @@ class Activity:
         if 'age' in self.attributes:
             self.attributes['age_s'] = Activity.aggregate_age(
                 self.attributes['age'])
+        self.extract_emails()
 
     def __str__(self):
         return f'{self.name}'
