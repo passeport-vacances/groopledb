@@ -41,7 +41,9 @@ class Group:
     order: int = 0
     attributes: dict = field(default_factory=dict)
     days: list = field(default_factory=list)
-    dow_key = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di']
+    dow_key_fr = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di']
+    dow_key_en = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'so']
+
     dow_fr = ['lundi', 'mardi', 'mercredi',
               'jeudi', 'vendredi', 'samedi', 'dimanche']
     dow_de = ['Montag', 'Dienstag', 'Mittwoch',
@@ -66,14 +68,18 @@ class Group:
         else:
             res["period"] = None
 
-        m = re.match(r'(\w{2})\s(\d+)[.-](\d+)(?:-\d{2,4})?$', d)
-        if m:
-            dow, day, month = m.group(1), m.group(2), m.group(3)
+        m_new = re.match(r'(\w{2})\s(\d{2})[-](\d{2})[-](\d{4})?$', d)
+        m_old = re.match(r'(\w{2})\s(\d+)[.-](\d+)(?:-\d{2,4})?$', d)
+
+        if m_new:
+            m = m_new
+            dow, day, month, year2 = m.group(1), m.group(2), m.group(3), m.group(4)
             res["dow"] = dow
             res["day"] = int(day)
             res["month"] = int(month)
             res["order"] = int(month) * 32 + int(day)
-            dowi = Group.dow_key.index(dow.lower())
+            res["datetime"] = datetime.datetime(int(year2), int(month), int(day))
+            dowi = res["datetime"].weekday()
             if dowi >= 0:
                 res["date_fr"] = f"{Group.dow_fr[dowi]} {day}.{month}"
                 res["date_de"] = f"{Group.dow_de[dowi]} {day}.{month}"
@@ -81,7 +87,21 @@ class Group:
                 res["date_fr"] = f"{dow} {day}.{month}"
                 res["date_de"] = res["date_fr"]
 
+        elif m_old:
+            m = m_old
+            dow, day, month = m.group(1), m.group(2), m.group(3)
+            res["dow"] = dow
+            res["day"] = int(day)
+            res["month"] = int(month)
+            res["order"] = int(month) * 32 + int(day)
             res["datetime"] = datetime.datetime(year, int(month), int(day))
+            dowi = Group.dow_key_fr.index(dow.lower())
+            if dowi >= 0:
+                res["date_fr"] = f"{Group.dow_fr[dowi]} {day}.{month}"
+                res["date_de"] = f"{Group.dow_de[dowi]} {day}.{month}"
+            else:
+                res["date_fr"] = f"{dow} {day}.{month}"
+                res["date_de"] = res["date_fr"]
 
         else:
             res["date_fr"] = re.sub(r'\s+', ' ', d.strip())
