@@ -1,3 +1,3 @@
-# Groople-DB
+# PY-GroopleDB
 
-A library to read data from the Grroople MySQL database.
+A python library to read data from the Groople MySQL database.
