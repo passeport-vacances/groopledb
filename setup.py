@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Copyright 2019 Jacques Supcik
+Copyright 2020 Jacques Supcik
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ setup(
         'PyMySQL',
         'PyYAML',
         'records',
+        'email_validator',
     ],
     classifiers=[
         "Programming Language :: Python :: 3.6",
